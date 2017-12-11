@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+from scipy import sparse 
 
 #Paramètres du modèle
 
@@ -8,6 +9,9 @@ a_max = 2
 T_max = 2*a_max
 N_a = 120
 N_t = 50
+Dt = T_max/N_t
+Da = a_max/N_a
+CFL = Dt/Da
 
 def beta(a):
     return 10*a*(a_max - a)*math.exp(-20*(a-(a_max/3))**2)
@@ -37,7 +41,9 @@ def draw_beta_mu():
 def question2():
     #On implémente le schéma implicite décentré amont proposé
     #On commence par définir la matrice B telle que B P_(n+1) = P_n
+    B = sparse.diags([-cfl, 1+cfl+Dt*mu(Da*i)], [-1, 0], shape=(N_a, N_a), format = 'csc')
     #On trouve l'inverse de B
+    B_I = scipy.sparse.linalg.inv(B)
     #On implémente le schéma
 
 
