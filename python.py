@@ -45,7 +45,31 @@ def question2():
     #On trouve l'inverse de B
     B_I = scipy.sparse.linalg.inv(B)
     #On implémente le schéma
-
+    #On donne une valeur initiale pour P
+    ai = [i*a_max/N_a for i in range(N_a)]
+    P0=np.transpose(np.mat([zeta(i) for i in ai]))
+    #On garde en mémoire toutes les valeurs de P 
+    P=list()
+    P.append(P0)
+    for i in range(N_t):
+        P.append(B_I*P[-1])
+    #On affiche P à différents temps
+    x=[i*a_max/N_a for i in range(N_a)]
+    y0 = np.transpose(P[0])
+    y1 = np.transpose(P[10])
+    y2 = np.transpose(P[20])
+    y3 = np.transpose(P[30])
+    y4 = np.transpose(P[40])
+    plt.axis([0, a_max, 0, 10])
+    plt.plot(x,y0, label='initial')
+    plt.plot(x,y1, label='après 10dt')
+    plt.plot(x,y2, label='après 20dt')
+    plt.plot(x,y3, label='après 30dt')
+    plt.plot(x,y4, label='après 40dt')
+    plt.legend()
+    plt.show()
+    return
 
 
 draw_beta_mu()
+question2()
