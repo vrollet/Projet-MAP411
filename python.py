@@ -41,9 +41,12 @@ def draw_beta_mu():
 def question2():
     #On implémente le schéma implicite décentré amont proposé
     #On commence par définir la matrice B telle que B P_(n+1) = P_n
-    B = sparse.diags([-cfl, 1+cfl+Dt*mu(Da*i)], [-1, 0], shape=(N_a, N_a), format = 'csc')
+    Bmaindiag = [1+CFL+Dt*mu(Da*i) for i in range(N_a)]
+    Bsubdiag = [-CFL for i in range(1,N_a)]
+    Bdiagonals = [Bmaindiag,Bsubdiag]
+    B=sparse.diags(Bdiagonals, [0, -1],format='csc')
     #On trouve l'inverse de B
-    B_I = scipy.sparse.linalg.inv(B)
+    B_I = sparse.linalg.inv(B)
     #On implémente le schéma
     #On donne une valeur initiale pour P
     ai = [i*a_max/N_a for i in range(N_a)]
@@ -55,17 +58,17 @@ def question2():
         P.append(B_I*P[-1])
     #On affiche P à différents temps
     x=[i*a_max/N_a for i in range(N_a)]
-    y0 = np.transpose(P[0])
-    y1 = np.transpose(P[10])
-    y2 = np.transpose(P[20])
-    y3 = np.transpose(P[30])
-    y4 = np.transpose(P[40])
-    plt.axis([0, a_max, 0, 10])
+    y0 = P[0]
+    y1 = P[5]
+    y2 = P[10]
+    y3 = P[15]
+    y4 = P[20]
+    plt.axis([0, a_max, 0, 1.2])
     plt.plot(x,y0, label='initial')
-    plt.plot(x,y1, label='après 10dt')
-    plt.plot(x,y2, label='après 20dt')
-    plt.plot(x,y3, label='après 30dt')
-    plt.plot(x,y4, label='après 40dt')
+    plt.plot(x,y1, label='après 5dt')
+    plt.plot(x,y2, label='après 10dt')
+    plt.plot(x,y3, label='après 15dt')
+    plt.plot(x,y4, label='après 20dt')
     plt.legend()
     plt.show()
     return
