@@ -34,5 +34,12 @@ def draw_beta_mu():
     return
 
 
+def question2():
+    #On implémente le schéma implicite décentré amont proposé
+    #On commence par définir la matrice B telle que B P_(n+1) = P_n
+    #On trouve l'inverse de B
+    #On implémente le schéma
+
+
 
 draw_beta_mu()
