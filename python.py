@@ -4,7 +4,7 @@ import math
 import scipy
 from scipy import integrate as integr
 from scipy import optimize as opti
-from scipy import sparse 
+from scipy import sparse as sparce
 
 #Paramètres du modèle
 
@@ -21,16 +21,20 @@ def beta(a):
 
 def mu(a):
     if a==a_max: 
-        return 9999999999999999
+        return 9999999999999999 #Pour éviter des erreurs numériques dues à la divergence de mu en a_max
     else:
         return 1/(a_max-a)
 
 def zeta(a):
     return math.exp(-30*(a-(a_max/4))**2)
 
+def zeta2(a):
+    lambda_e=8.5716
+    return ((a_max-a)/a_max)*np.exp(-lambda_e*a)
+
 def pi(x):
     if x==a_max:
-        (C,err)=integr.quad(mu,0,x*0.999)
+        return 0.0000000001 #Pour éviter une erreur d'intégration due à la fonction mu divergente en a_max
     else:
         (C,err)=integr.quad(mu,0,x)
     return np.exp(-C) 
@@ -123,11 +127,11 @@ def question10():
 def question14():
     #On implémente numériquement la matrice A
     ai=[i*Da for i in range(N_a+1)]
-    w=[0.5]+[1 for i in range(1,N_a)]+[0.5]
+    w=[0.5*Da]+[Da for i in range(1,N_a)]+[0.5]
     lambda_e=8.5716
     alpha_tilde=2+Dt*lambda_e
     alpha = (1-alpha_tilde)/Dt
-    c=[(1+m(ai[1]))/Dt]+[(1+w[i+1]*m(ai[i+1])-alpha_tilde*w[i]*m(ai[1]))/Dt for i in range(1,N_a)]+[(1-0.5*m(ai[N_a])*alpha_tilde)/Dt]
+    c=[(1+w[1]*m(ai[1]))/Dt]+[(1+w[i+1]*m(ai[i+1])-alpha_tilde*w[i]*m(ai[1]))/Dt for i in range(1,N_a)]+[(1-w[N_a]*m(ai[N_a])*alpha_tilde)/Dt]
     
     A=np.zeros((N_a+1,N_a+1))
     A[0]=c
@@ -136,9 +140,9 @@ def question14():
         A[i][i]=alpha
     
     #On affiche les valeurs propres de A
-    print("Les valeurs propres de A sont : ")
+    #print("Les valeurs propres de A sont : ")
     vpA=scipy.linalg.eigvals(A)
-    print(vpA)
+    #print(vpA)
     
     #On peut vérfier que les valeurs propres vérifient l'équation (7) dicrétisée
     res=list()
@@ -146,17 +150,118 @@ def question14():
         r=0
         for i in range(N_a+1):
             r+=Da*w[i]*m(ai[i])*np.exp(-l*ai[i])
-        res.append(r)
-    
-    res_norme=[abs(r) for r in res]              
+        res.append(r-1)
+    #Nous aurions aimé que la liste res ne contienne que des 0, ce n'est malhereusement pas le cas           
     
     #On implémente la matrice B
     B=np.eye(N_a+1)-Dt*A
-    #On cherche le rayon spectral de B
+    #On cherche le min du spectre de B
     vp=scipy.linalg.eigvals(A)
     vp_norme=[np.abs(v) for v in vp]
-    rayon = max(vp_norme)
+    vp_min = min(vp_norme)
     
-    print("Le rayon spectral de B est : "+str(rayon))
+    #print("La plus petite valeur propre de B est : "+str(vp_min))
     
+    #La fonction renvoie B^-1, qui sera utile dans l'implémentation du schéma numérique
+    B_1=np.linalg.inv(B)
+    
+    return B_1
+
+def u_to_p(u,t):
+    lambda_e=8.5716
+    #Prend un vecteur u en entrée et un temps t, et renvoie le vecteur p associé
+    p=list()
+    for i in range(N_a+1):
+        a=Da*i
+        p.append(pi(a)*np.exp(lambda_e*t)*u[i])
+    return p
+
+def p_to_u(p,t):
+    lambda_e=8.5716
+    #Prend un vecteur p en entrée et un temps t, et renvoie le vecteur u associé
+    u=list()
+    for i in range(N_a+1):
+        a=Da*i
+        u.append((1/pi(a))*np.exp(-lambda_e*t)*p[i])
+    return u
+
+
+def question15():
+
+    #On implémente le schéma 
+    B_1=question14()
+    
+    ##PREMIERE CONDITION INITIALE
+    
+    #On convertit la condition initiale p en u
+    p=[zeta2(i*Da) for i in range(N_a+1)]
+    u=p_to_u(p,0)
+    
+    #On applique la matrice B_1 a u pour passer d'un instant t à l'instant t+1
+    res_u = list()
+    res_u.append(u)
+    
+    for i in range(N_t):
+        #Calcul de u à t+1
+        u=B_1*np.transpose(np.mat(res_u[-1]))
+        #Conversion en liste
+        u=list(np.array(np.transpose(u))[0])
+        res_u.append(u)
+    
+    #On repasse en p
+    res_p=list()
+    for i in range(N_t):
+        res_p.append(u_to_p(res_u[i], Dt*i))
+    
+    #On affiche le résultat
+
+    x=[i*a_max/N_a for i in range(N_a+1)]
+    y0 = res_p[0]
+    y1 = res_p[5]
+    y2 = res_p[10]
+    y3 = res_p[15]
+    plt.axis([0, a_max, 0, 1.2])
+    plt.plot(x,y0, label='initial')
+    plt.plot(x,y1, label='après 5dt')
+    plt.plot(x,y2, label='après 10dt')
+    plt.plot(x,y3, label='après 15dt')
+    plt.legend()
+    plt.show()
+
+    ##SECONDE CONDITION INITIALE
+    
+    #On convertit la condition initiale p en u
+    p=[zeta(i*Da) for i in range(N_a+1)]
+    u=p_to_u(p,0)
+    
+    #On applique la matrice B_1 a u pour passer d'un instant t à l'instant t+1
+    res_u = list()
+    res_u.append(u)
+    
+    for i in range(N_t):
+        #Calcul de u à t+1
+        u=B_1*np.transpose(np.mat(res_u[-1]))
+        #Conversion en liste
+        u=list(np.array(np.transpose(u))[0])
+        res_u.append(u)
+    
+    #On repasse en p
+    res_p=list()
+    for i in range(N_t):
+        res_p.append(u_to_p(res_u[i], Dt*i))
+    
+    #On affiche le résultat
+
+    x=[i*a_max/N_a for i in range(N_a+1)]
+    y0 = res_p[0]
+    y1 = res_p[5]
+    y2 = res_p[10]
+    y3 = res_p[15]
+    plt.axis([0, a_max, 0, 1.2])
+    plt.plot(x,y0, label='initial')
+    plt.plot(x,y1, label='après 5dt')
+    plt.plot(x,y2, label='après 10dt')
+    plt.plot(x,y3, label='après 15dt')
+    plt.legend()
+    plt.show()
     return
