@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 import math
 import scipy
 from scipy import integrate as integr
 from scipy import optimize as opti
-from scipy import sparse as sparce
+from scipy import sparse
+
 
 #Paramètres du modèle
 
@@ -31,6 +33,9 @@ def zeta(a):
 def zeta2(a):
     lambda_e=8.5716
     return ((a_max-a)/a_max)*np.exp(-lambda_e*a)
+
+def zeta3(a):
+    return math.sqrt(a_max**2-(3/4)*(a**2))-(a_max/2)
 
 def pi(x):
     if x==a_max:
@@ -66,6 +71,35 @@ def draw_beta_mu():
     
     return
 
+def draw_pi():
+    resolution = 0.005
+    x = [i*resolution for i in range(int(a_max/resolution))]
+    y = [pi(a) for a in x]   
+    plt.axis([0, a_max, 0, 1.1])
+    plt.plot(x,y, label='pi')
+    plt.legend()
+    plt.show()
+    return
+
+def draw_zeta():
+    resolution = 0.005
+    x = [i*resolution for i in range(int(a_max/resolution))]
+    y = [zeta(a) for a in x]   
+    plt.axis([0, a_max, 0, 1.1])
+    plt.plot(x,y, label='zeta')
+    plt.legend()
+    plt.show()
+    return
+
+def draw_m():
+    resolution = 0.005
+    x = [i*resolution for i in range(int(a_max/resolution))]
+    y = [m(a) for a in x]   
+    plt.axis([0, a_max, 0, 6.1])
+    plt.plot(x,y, label='m')
+    plt.legend()
+    plt.show()
+    return
 
 def question2():
     #On implémente le schéma implicite décentré amont proposé
@@ -100,6 +134,19 @@ def question2():
     plt.plot(x,y4, label='après 20dt')
     plt.legend()
     plt.show()
+     
+    #On trace p(a,x) 
+    Z=list()
+    for i in range(len(P[0])):
+        Z.insert(0,[])
+        for j in range(len(P)):
+            Z[0].append(np.array(P[j][i])[0][0])
+    
+    f, ax = plt.subplots()
+    ax.set_title('Evolution de p en fonction du temps')
+    ax.imshow(Z,interpolation='bilinear', extent = (0,T_max,0,a_max))
+    plt.show()
+    
     return
 
 def question10():
@@ -262,6 +309,14 @@ def question15():
     plt.plot(x,y1, label='après 5dt')
     plt.plot(x,y2, label='après 10dt')
     plt.plot(x,y3, label='après 15dt')
+    plt.legend()
+    plt.show()
+    
+    #Proposition de condition initiale
+    print("On propose la condition initiale suivante :")
+    y0 = [zeta3(i*Da) for i in range(N_a+1)]
+    plt.plot(x,y0, label='initial')
+    plt.axis([0, a_max, 0, 1.2])
     plt.legend()
     plt.show()
     return
